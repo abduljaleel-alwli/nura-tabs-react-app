@@ -254,37 +254,39 @@ const HomeView: React.FC<HomeViewProps> = ({
             )
         })}
 
-        <div className="p-4 rounded-lg bg-zinc-200/20 dark:bg-zinc-800/30">
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">Uncategorized</h2>
-                    <span className="text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-2 py-1 rounded-full">
-                        {uncategorizedTabs.length}
-                    </span>
+        {savedTabs.length > 0 && (
+            <div className="p-4 rounded-lg bg-zinc-200/20 dark:bg-zinc-800/30">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-xl font-bold text-zinc-800 dark:text-zinc-200">Uncategorized</h2>
+                        <span className="text-xs font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 px-2 py-1 rounded-full">
+                            {uncategorizedTabs.length}
+                        </span>
+                    </div>
+                    <button
+                        onClick={() => onOpenGroup(null)}
+                        disabled={uncategorizedTabs.length === 0}
+                        className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label="Open all uncategorized tabs"
+                        title="Open all uncategorized tabs"
+                    >
+                        <BoxArrowUpRightIcon className="w-5 h-5" />
+                    </button>
                 </div>
-                 <button
-                    onClick={() => onOpenGroup(null)}
-                    disabled={uncategorizedTabs.length === 0}
-                    className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Open all uncategorized tabs"
-                    title="Open all uncategorized tabs"
+              {uncategorizedTabs.length > 0 ? (
+                renderTabList(uncategorizedTabs, null)
+              ) : (
+                <div 
+                  className="text-zinc-500 dark:text-zinc-500 text-center py-4 rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700 min-h-[60px] flex items-center justify-center"
+                  onDragEnter={(e) => handleDragEnter(e, 'uncategorized', 'group-area')}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDropOnGroupArea(e, null)}
                 >
-                    <BoxArrowUpRightIcon className="w-5 h-5" />
-                </button>
+                  No uncategorized tabs.
+                </div>
+              )}
             </div>
-          {uncategorizedTabs.length > 0 ? (
-            renderTabList(uncategorizedTabs, null)
-          ) : (
-            <div 
-              className="text-zinc-500 dark:text-zinc-500 text-center py-4 rounded-md border-2 border-dashed border-zinc-300 dark:border-zinc-700 min-h-[60px] flex items-center justify-center"
-              onDragEnter={(e) => handleDragEnter(e, 'uncategorized', 'group-area')}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDropOnGroupArea(e, null)}
-            >
-              No uncategorized tabs.
-            </div>
-          )}
-        </div>
+        )}
 
         {savedTabs.length === 0 && searchQuery === '' && (
           <div className="text-center py-16">
