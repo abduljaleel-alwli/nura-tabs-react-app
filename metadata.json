@@ -1,0 +1,5 @@
+{
+  "name": "Mini Tabs",
+  "description": "A Chrome extension that provides a mini, Chrome-like browsing experience inside the Side Panel. Users can open internal tabs, navigate to URLs, and save tabs as quick-access cards.",
+  "requestFramePermissions": []
+}
