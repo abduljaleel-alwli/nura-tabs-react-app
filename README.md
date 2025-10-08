@@ -1,5 +1,5 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://raw.githubusercontent.com/abduljaleel-alwli/shamll-tech-icon/refs/heads/main/shamll-thumbnail.png" />
+<img width="1200" alt="GHBanner" src="https://raw.githubusercontent.com/abduljaleel-alwli/shamll-tech-icon/refs/heads/main/shamll-thumbnail.png" />
 </div>
 
 # Nura Tabs
