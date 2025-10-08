@@ -8,6 +8,7 @@ import { TabsIcon } from './icons/TabsIcon';
 import { BookmarkIcon } from './icons/BookmarkIcon';
 import { SunIcon } from './icons/SunIcon';
 import { MoonIcon } from './icons/MoonIcon';
+import Logo from './Logo';
 
 interface HeaderProps {
   onNewTab: () => void;
@@ -45,6 +46,8 @@ const Header: React.FC<HeaderProps> = ({
     <header className="bg-zinc-100 dark:bg-zinc-800 shadow-md z-10 sticky top-0">
       <div className="p-2 flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700">
         <div className="flex items-center gap-2">
+          <Logo />
+          <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-700 mx-2" />
           <button
             onClick={onGoHome}
             className="p-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
