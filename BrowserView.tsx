@@ -1,22 +1,24 @@
-
 import React, { useState, useEffect } from 'react';
-import { InternalTab, OEmbedData, LinkCardData } from '../types';
+import { InternalTab, OEmbedData, LinkCardData } from './types';
 import UrlBar from './UrlBar';
 import IframeWrapper from './IframeWrapper';
-import OEmbedWrapper from './OEmbedWrapper';
-import LinkCard from './LinkCard';
-import BlockedContent from './BlockedContent';
-import { getOEmbedData, getLinkMetadata, checkHeadersForBlocking } from '../utils/fallbackService';
+import OEmbedWrapper from './components/OEmbedWrapper';
+import LinkCard from './components/LinkCard';
+import BlockedContent from './components/BlockedContent';
+import { getOEmbedData, getLinkMetadata, checkHeadersForBlocking } from './utils/fallbackService';
+import { ShrinkIcon } from './components/icons/ShrinkIcon';
 
 interface BrowserViewProps {
   tab: InternalTab;
   onNavigate: (url: string) => void;
   onStatusChange: (status: { isLoading: boolean; isBlocked: boolean; }) => void;
+  isFullScreen: boolean;
+  onToggleFullScreen: () => void;
 }
 
 type ViewState = 'initial' | 'loading' | 'iframe' | 'oembed' | 'link-card' | 'blocked';
 
-const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChange }) => {
+const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChange, isFullScreen, onToggleFullScreen }) => {
   const [viewState, setViewState] = useState<ViewState>('initial');
   const [fallbackData, setFallbackData] = useState<OEmbedData | LinkCardData | null>(null);
 
@@ -30,13 +32,11 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
       setViewState('loading');
       setFallbackData(null);
 
-      // 1. Prioritize oEmbed for a better UX on supported sites like YouTube.
       try {
         const oembed = await getOEmbedData(tab.url);
         if (oembed && oembed.html) {
           setFallbackData(oembed);
           setViewState('oembed');
-          // Mark as "blocked" from an iframe perspective so it's saved correctly
           onStatusChange({ isLoading: false, isBlocked: true });
           return;
         }
@@ -44,11 +44,9 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
         console.warn('oEmbed check failed:', error);
       }
 
-      // 2. If no oEmbed, check if the site can be iframed by checking headers.
       try {
         const isBlockedByHeaders = await checkHeadersForBlocking(tab.url);
         if (isBlockedByHeaders) {
-          // 3a. If blocked, try to get link card metadata as a fallback.
           try {
             const metadata = await getLinkMetadata(tab.url);
             if (metadata && metadata.title) {
@@ -61,17 +59,13 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
             console.warn('Metadata fetch failed:', error);
           }
           
-          // 3b. If metadata fails, show the generic blocked content page.
           setViewState('blocked');
           onStatusChange({ isLoading: false, isBlocked: true });
 
         } else {
-          // 4. If not blocked by headers, it's safe to attempt loading the iframe.
           setViewState('iframe');
-          // IframeWrapper will call onStatusChange with isLoading: false, isBlocked: false
         }
       } catch (error) {
-        // If the header check itself fails, attempt iframe as a last resort.
         console.warn('Header check failed, attempting iframe load directly:', error);
         setViewState('iframe');
       }
@@ -113,12 +107,24 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <UrlBar
-        key={`urlbar-${tab.id}`}
-        initialUrl={tab.url === 'about:blank' ? '' : tab.url}
-        onNavigate={onNavigate}
-      />
+    <div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 relative">
+      {!isFullScreen && (
+        <UrlBar
+            key={`urlbar-${tab.id}`}
+            initialUrl={tab.url === 'about:blank' ? '' : tab.url}
+            onNavigate={onNavigate}
+            onToggleFullScreen={onToggleFullScreen}
+        />
+      )}
+      {isFullScreen && (
+          <button
+            onClick={onToggleFullScreen}
+            className="fixed top-4 right-4 z-[100] p-2 bg-black/50 text-white rounded-full hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white transition-colors"
+            aria-label="Exit full screen"
+          >
+              <ShrinkIcon className="w-5 h-5" />
+          </button>
+      )}
       {renderContent()}
     </div>
   );

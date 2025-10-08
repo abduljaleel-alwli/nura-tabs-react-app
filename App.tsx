@@ -3,7 +3,7 @@ import { SavedTab, InternalTab, SavedGroup } from './types';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import Header from './components/Header';
 import HomeView from './components/HomeView';
-import BrowserView from './components/BrowserView';
+import BrowserView from './BrowserView';
 import SaveTabModal from './components/SaveTabModal';
 import EditTabModal from './components/EditTabModal';
 import ConfirmDeleteModal from './components/ConfirmDeleteModal';
@@ -15,8 +15,6 @@ type View = 'home' | 'browser';
 type Theme = 'light' | 'dark';
 
 const getDefaultTheme = (): Theme => {
-  // Default to dark theme as requested.
-  // The useLocalStorage hook will still prioritize any theme the user has previously set.
   return 'dark';
 };
 
@@ -26,7 +24,6 @@ const transformUrlForEmbedding = (inputUrl: string): string => {
     const hostname = urlObj.hostname;
     const pathname = urlObj.pathname;
 
-    // Handle www.youtube.com/watch?v=...
     if ((hostname === 'www.youtube.com' || hostname === 'youtube.com') && pathname === '/watch') {
       const videoId = urlObj.searchParams.get('v');
       if (videoId) {
@@ -34,7 +31,6 @@ const transformUrlForEmbedding = (inputUrl: string): string => {
       }
     }
     
-    // Handle youtu.be/VIDEOID
     if (hostname === 'youtu.be' && pathname.length > 1) {
       const videoId = pathname.substring(1).split('/')[0];
       if (videoId) {
@@ -42,7 +38,6 @@ const transformUrlForEmbedding = (inputUrl: string): string => {
       }
     }
 
-    // Handle www.youtube.com/shorts/VIDEOID
     if ((hostname === 'www.youtube.com' || hostname === 'youtube.com') && pathname.startsWith('/shorts/')) {
         const videoId = pathname.substring('/shorts/'.length).split('/')[0];
         if (videoId) {
@@ -65,6 +60,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [theme, setTheme] = useLocalStorage<Theme>('theme', getDefaultTheme);
+  const [isFullScreen, setIsFullScreen] = useState(false);
   
   // Modal States
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
@@ -93,6 +89,10 @@ const App: React.FC = () => {
   const handleToggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
+
+  const handleToggleFullScreen = useCallback(() => {
+    setIsFullScreen(prev => !prev);
+  }, []);
 
   const activeTab = internalTabs.find(t => t.id === activeInternalTabId);
 
@@ -252,7 +252,6 @@ const App: React.FC = () => {
   const handleConfirmDeleteGroup = useCallback(() => {
     if (groupToDeleteId) {
       setSavedGroups(prev => prev.filter(g => g.id !== groupToDeleteId));
-      // Un-assign tabs from the deleted group
       setSavedTabs(prev => prev.map(tab => 
         tab.groupId === groupToDeleteId ? { ...tab, groupId: undefined } : tab
       ));
@@ -296,13 +295,10 @@ const App: React.FC = () => {
         const newTabs = [...prevTabs];
         const [draggedItem] = newTabs.splice(draggedIndex, 1);
         
-        // Assign the groupId of the target to the dragged item
         draggedItem.groupId = prevTabs[targetIndex].groupId;
 
-        // Find the new index of the target tab after the splice
         const newTargetIndex = newTabs.findIndex(t => t.id === targetTabId);
 
-        // Insert the dragged item before the target tab
         newTabs.splice(newTargetIndex, 0, draggedItem);
         
         return newTabs;
@@ -321,8 +317,6 @@ const App: React.FC = () => {
 
   const handleGoToTabs = useCallback(() => {
     if (internalTabs.length > 0) {
-      // If there's an active tab, just switch to the browser view.
-      // If not, activate the last tab in the list. This is a robust fallback.
       if (activeInternalTabId) {
         setView('browser');
       } else {
@@ -336,7 +330,7 @@ const App: React.FC = () => {
   const handleOpenGroup = useCallback((groupId: string | null) => {
     const tabsToOpen = savedTabs.filter(tab => {
         if (groupId === null) {
-            return !tab.groupId; // Uncategorized
+            return !tab.groupId;
         }
         return tab.groupId === groupId;
     });
@@ -395,22 +389,24 @@ const App: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen font-sans bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-      <Header
-        onNewTab={handleNewTab}
-        onSaveTab={handleSaveCurrentTab}
-        onGoHome={() => setView('home')}
-        onGoToTabs={handleGoToTabs}
-        internalTabs={internalTabs}
-        activeInternalTabId={activeInternalTabId}
-        onSwitchTab={handleSwitchTab}
-        onCloseTab={handleCloseTab}
-        isBrowserView={view === 'browser'}
-        isSaveDisabled={isSaveButtonDisabled}
-        activeTabSavedInfo={activeTabSavedInfo}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-      />
-      <main className="flex-grow overflow-y-auto">
+      {!isFullScreen && (
+        <Header
+            onNewTab={handleNewTab}
+            onSaveTab={handleSaveCurrentTab}
+            onGoHome={() => setView('home')}
+            onGoToTabs={handleGoToTabs}
+            internalTabs={internalTabs}
+            activeInternalTabId={activeInternalTabId}
+            onSwitchTab={handleSwitchTab}
+            onCloseTab={handleCloseTab}
+            isBrowserView={view === 'browser'}
+            isSaveDisabled={isSaveButtonDisabled}
+            activeTabSavedInfo={activeTabSavedInfo}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+        />
+      )}
+      <main className="flex-grow overflow-y-auto overflow-x-hidden">
         {view === 'home' || !activeTab ? (
           <HomeView
             savedTabs={filteredTabs}
@@ -434,6 +430,8 @@ const App: React.FC = () => {
             tab={activeTab} 
             onNavigate={handleNavigate}
             onStatusChange={handleIframeStatusChange}
+            isFullScreen={isFullScreen}
+            onToggleFullScreen={handleToggleFullScreen}
           />
         )}
       </main>
