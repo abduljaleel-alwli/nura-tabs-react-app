@@ -1,4 +1,5 @@
 
+
 import React from 'react';
 import { InternalTab } from '../types';
 import UrlBar from './UrlBar';
@@ -19,7 +20,8 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
         onNavigate={onNavigate}
       />
       <IframeWrapper
-        key={tab.key}
+        // FIX: The `InternalTab` type does not have a `key` property. Changed to use `id`.
+        key={tab.id}
         url={tab.url}
         isLoading={tab.isLoading}
         isBlocked={tab.isBlocked}

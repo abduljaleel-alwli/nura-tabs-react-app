@@ -6,6 +6,7 @@ import { PlusIcon } from './icons/PlusIcon';
 import { FolderCogIcon } from './icons/FolderCogIcon';
 import { GripVerticalIcon } from './icons/GripVerticalIcon';
 import { BoxArrowUpRightIcon } from './icons/BoxArrowUpRightIcon';
+import Footer from './Footer';
 
 interface HomeViewProps {
   savedTabs: SavedTab[];
@@ -302,6 +303,7 @@ const HomeView: React.FC<HomeViewProps> = ({
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

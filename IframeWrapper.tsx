@@ -25,11 +25,11 @@ const IframeWrapper: React.FC<IframeWrapperProps> = ({ url, onLoad }) => {
 
 
   return (
-    <div className="flex-grow relative bg-white">
+    <div className="flex-grow relative bg-white h-full">
       <iframe
         ref={iframeRef}
         src={url}
-        title="Nura Tab Content"
+        title="Mini Tab Content"
         className="w-full h-full border-0"
         sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
         referrerPolicy="no-referrer"

@@ -17,7 +17,6 @@ export interface InternalTab {
   url: string;
   isLoading: boolean;
   isBlocked: boolean;
-  key: number; // Used to force iframe re-renders
 }
 
 export interface OEmbedData {

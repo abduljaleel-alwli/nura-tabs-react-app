@@ -66,7 +66,7 @@ const IframeWrapper: React.FC<IframeWrapperProps> = ({ url, isLoading, isBlocked
       <iframe
         ref={iframeRef}
         src={url}
-        title="Nura Tab Content"
+        title="Mini Tab Content"
         className={`w-full h-full border-0 ${isBlocked || isLoading ? 'opacity-0' : 'opacity-100'}`}
         sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
         referrerPolicy="no-referrer"

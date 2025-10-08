@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { InternalTab, OEmbedData, LinkCardData } from './types';
 import UrlBar from './UrlBar';
 import IframeWrapper from './IframeWrapper';
@@ -21,8 +21,17 @@ type ViewState = 'initial' | 'loading' | 'iframe' | 'oembed' | 'link-card' | 'bl
 const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChange, isFullScreen, onToggleFullScreen }) => {
   const [viewState, setViewState] = useState<ViewState>('initial');
   const [fallbackData, setFallbackData] = useState<OEmbedData | LinkCardData | null>(null);
+  const lastProcessedUrl = useRef<string | null>(null);
 
   useEffect(() => {
+    // If the URL is the same as the last one we processed for this component instance,
+    // the view state is already correct, so we can skip reprocessing.
+    if (tab.url === lastProcessedUrl.current) {
+      return;
+    }
+    // Update the ref to the new URL we are about to process.
+    lastProcessedUrl.current = tab.url;
+
     const processUrl = async () => {
       if (!tab.url || tab.url === 'about:blank') {
         setViewState('initial');
@@ -72,39 +81,7 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
     };
 
     processUrl();
-  }, [tab.url, tab.key, onStatusChange]);
-
-  const renderContent = () => {
-    switch (viewState) {
-      case 'loading':
-        return (
-          <div className="flex-grow flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        );
-      case 'oembed':
-        return <OEmbedWrapper data={fallbackData as OEmbedData} />;
-      case 'link-card':
-        return <LinkCard data={fallbackData as LinkCardData} />;
-      case 'blocked':
-        return <BlockedContent url={tab.url} />;
-      case 'iframe':
-         return (
-            <IframeWrapper
-                key={tab.key}
-                url={tab.url}
-                onLoad={() => onStatusChange({ isLoading: false, isBlocked: false })}
-            />
-        );
-      case 'initial':
-      default:
-        return (
-            <div className="flex-grow flex items-center justify-center bg-zinc-50 dark:bg-zinc-900">
-                <p className="text-zinc-500 dark:text-zinc-500">Enter a URL to start browsing</p>
-            </div>
-        );
-    }
-  };
+  }, [tab.url, onStatusChange]);
 
   return (
     <div className="flex flex-col h-full bg-zinc-50 dark:bg-zinc-900 relative">
@@ -125,7 +102,41 @@ const BrowserView: React.FC<BrowserViewProps> = ({ tab, onNavigate, onStatusChan
               <ShrinkIcon className="w-5 h-5" />
           </button>
       )}
-      {renderContent()}
+      
+      <div className="flex-grow relative">
+        {/* Loading View */}
+        <div className={`absolute inset-0 z-20 ${viewState === 'loading' ? 'flex' : 'hidden'} items-center justify-center bg-zinc-50/80 dark:bg-zinc-900/80`}>
+          <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+
+        {/* OEmbed View */}
+        <div className={`w-full h-full ${viewState === 'oembed' ? 'block' : 'hidden'}`}>
+          {fallbackData && <OEmbedWrapper data={fallbackData as OEmbedData} />}
+        </div>
+        
+        {/* LinkCard View */}
+        <div className={`w-full h-full ${viewState === 'link-card' ? 'block' : 'hidden'}`}>
+          {fallbackData && <LinkCard data={fallbackData as LinkCardData} />}
+        </div>
+        
+        {/* Blocked View */}
+        <div className={`w-full h-full ${viewState === 'blocked' ? 'block' : 'hidden'}`}>
+          <BlockedContent url={tab.url} />
+        </div>
+        
+        {/* Initial View */}
+        <div className={`w-full h-full ${viewState === 'initial' ? 'flex' : 'hidden'} items-center justify-center`}>
+          <p className="text-zinc-500 dark:text-zinc-500">Enter a URL to start browsing</p>
+        </div>
+        
+        {/* Iframe View - always mounted, but visibility is toggled */}
+        <div className={`w-full h-full ${viewState === 'iframe' ? 'block' : 'hidden'}`}>
+          <IframeWrapper
+              url={tab.url}
+              onLoad={() => onStatusChange({ isLoading: false, isBlocked: false })}
+          />
+        </div>
+      </div>
     </div>
   );
 };

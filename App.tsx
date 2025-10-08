@@ -102,7 +102,6 @@ const App: React.FC = () => {
       url: 'about:blank',
       isLoading: false,
       isBlocked: false,
-      key: Date.now(),
     };
     setInternalTabs(prev => [...prev, newTab]);
     setActiveInternalTabId(newTab.id);
@@ -130,9 +129,7 @@ const App: React.FC = () => {
     });
   }, [activeInternalTabId]);
 
-  const handleNavigate = useCallback((url: string) => {
-    if (!activeInternalTabId) return;
-
+  const handleNavigate = useCallback((url: string, tabId: string) => {
     let formattedUrl = url.trim();
     if (formattedUrl && !/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = `https://${formattedUrl}`;
@@ -141,11 +138,11 @@ const App: React.FC = () => {
     const finalUrl = transformUrlForEmbedding(formattedUrl);
 
     setInternalTabs(prev => prev.map(t =>
-      t.id === activeInternalTabId
-        ? { ...t, url: finalUrl, isLoading: true, isBlocked: false, key: Date.now() }
+      t.id === tabId
+        ? { ...t, url: finalUrl, isLoading: true, isBlocked: false }
         : t
     ));
-  }, [activeInternalTabId]);
+  }, [setInternalTabs]);
   
   const handleOpenSavedTab = useCallback((savedTab: SavedTab) => {
     const finalUrl = transformUrlForEmbedding(savedTab.url);
@@ -162,7 +159,6 @@ const App: React.FC = () => {
       url: finalUrl,
       isLoading: true,
       isBlocked: savedTab.embeddable === false,
-      key: Date.now(),
     };
     setInternalTabs(prev => [...prev, newTab]);
     setActiveInternalTabId(newTab.id);
@@ -260,17 +256,22 @@ const App: React.FC = () => {
   }, [groupToDeleteId, setSavedGroups, setSavedTabs]);
 
 
-  const handleIframeStatusChange = useCallback((status: { isLoading: boolean; isBlocked: boolean; }) => {
-    if (!activeInternalTabId) return;
-    setInternalTabs(prev => prev.map(t =>
-      t.id === activeInternalTabId
-        ? { ...t, isLoading: status.isLoading, isBlocked: status.isBlocked }
-        : t
-    ));
-    if (status.isBlocked) {
-        setSavedTabs(prev => prev.map(st => st.url === activeTab?.url ? {...st, embeddable: false} : st));
+  const handleIframeStatusChange = useCallback((status: { isLoading: boolean; isBlocked: boolean; }, tabId: string) => {
+    if (!tabId) return;
+    
+    let tabUrl = '';
+    setInternalTabs(prevTabs => prevTabs.map(t => {
+      if (t.id === tabId) {
+        tabUrl = t.url;
+        return { ...t, isLoading: status.isLoading, isBlocked: status.isBlocked };
+      }
+      return t;
+    }));
+
+    if (status.isBlocked && tabUrl) {
+        setSavedTabs(prev => prev.map(st => st.url === tabUrl ? {...st, embeddable: false} : st));
     }
-  }, [activeInternalTabId, setSavedTabs, activeTab?.url]);
+  }, [setInternalTabs, setSavedTabs]);
 
   const handleReorderGroups = useCallback((draggedGroupId: string, targetGroupId: string) => {
     setSavedGroups(prevGroups => {
@@ -343,14 +344,13 @@ const App: React.FC = () => {
 
     const newInternalTabs: InternalTab[] = tabsToOpen
         .filter(savedTab => !openUrls.has(transformUrlForEmbedding(savedTab.url)))
-        .map((savedTab, index) => {
+        .map((savedTab) => {
             const finalUrl = transformUrlForEmbedding(savedTab.url);
             return {
                 id: crypto.randomUUID(),
                 url: finalUrl,
                 isLoading: true,
                 isBlocked: savedTab.embeddable === false,
-                key: Date.now() + index,
             };
         });
 
@@ -406,8 +406,8 @@ const App: React.FC = () => {
             onToggleTheme={handleToggleTheme}
         />
       )}
-      <main className="flex-grow overflow-y-auto overflow-x-hidden">
-        {view === 'home' || !activeTab ? (
+      <main className="flex-grow overflow-hidden">
+        <div className={`h-full overflow-y-auto overflow-x-hidden ${view === 'browser' && activeTab ? 'hidden' : 'block'}`}>
           <HomeView
             savedTabs={filteredTabs}
             savedGroups={savedGroups}
@@ -424,16 +424,21 @@ const App: React.FC = () => {
             onReorderTabs={handleReorderTabs}
             onMoveTabToGroup={handleMoveTabToGroup}
           />
-        ) : (
-          <BrowserView 
-            key={activeTab.id} 
-            tab={activeTab} 
-            onNavigate={handleNavigate}
-            onStatusChange={handleIframeStatusChange}
-            isFullScreen={isFullScreen}
-            onToggleFullScreen={handleToggleFullScreen}
-          />
-        )}
+        </div>
+        
+        <div className={`h-full ${view === 'browser' && activeTab ? 'block' : 'hidden'}`}>
+          {internalTabs.map((tab) => (
+            <div key={tab.id} className={`h-full ${tab.id === activeInternalTabId ? 'block' : 'hidden'}`}>
+              <BrowserView
+                tab={tab}
+                onNavigate={(url) => handleNavigate(url, tab.id)}
+                onStatusChange={(status) => handleIframeStatusChange(status, tab.id)}
+                isFullScreen={isFullScreen}
+                onToggleFullScreen={handleToggleFullScreen}
+              />
+            </div>
+          ))}
+        </div>
       </main>
       
       {/* Tab Modals */}
