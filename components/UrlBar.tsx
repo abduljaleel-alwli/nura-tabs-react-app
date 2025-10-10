@@ -30,23 +30,37 @@ const UrlBar: React.FC<UrlBarProps> = ({ initialUrl, onNavigate }) => {
     }
   };
 
+  const canUseClipboard = () => {
+    try {
+      // Chrome: Permissions Policy API
+      return document.permissionsPolicy?.allows("clipboard-write") ?? false;
+    } catch {
+      return false;
+    }
+  };
+
   const handleCopy = async () => {
     if (!url) return;
+
+    // إذا السياسة تمنع، لا تحاول أصلاً — اذهب مباشرة للأب
+    if (!canUseClipboard()) {
+      window.parent?.postMessage(
+        { type: "NURA_COPY_REQUEST", payload: url },
+        "*"
+      );
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(url);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (err) {
-      // Fallback: ask the parent frame to handle the copy action
-      try {
-        window.parent?.postMessage(
-          { type: "NOUR_COPY_REQUEST", payload: url },
-          "*"
-        );
-        // Optional: show a toast like "Copying via parent frame..."
-      } catch (e) {
-        console.error("Clipboard blocked and postMessage failed:", e);
-      }
+    } catch {
+      // فشل لأي سبب آخر → جرّب الأب
+      window.parent?.postMessage(
+        { type: "NURA_COPY_REQUEST", payload: url },
+        "*"
+      );
     }
   };
 
