@@ -29,7 +29,7 @@ const IframeWrapper: React.FC<IframeWrapperProps> = ({ url, onLoad }) => {
       <iframe
         ref={iframeRef}
         src={url}
-        title="Mini Tab Content"
+        title="Nura Content"
         className="w-full h-full border-0"
         sandbox="allow-forms allow-modals allow-popups allow-presentation allow-same-origin allow-scripts"
         referrerPolicy="no-referrer"
